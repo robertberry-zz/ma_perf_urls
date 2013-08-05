@@ -1,10 +1,12 @@
 (ns ma_perf_urls.core
+  (:use clojure.java.io)
+  (:use clj-ssh.ssh)
   (:use clj-ssh.ssh)
   (:use clj-time.core)
   (:use clj-time.format)
   (:use clj-time.local))
 
-(def hosts (list "put hosts here"))
+(def hosts (list "add server here"))
 
 (def user "jvmuser")
 
@@ -19,13 +21,17 @@
 (def requests-duration (minutes 30))
 
 (defn log-filehandles [hosts]
-  (let [f (fn [host]
-            (let [agent (ssh-agent {})]
+  (let [f (fn [key host]
+            (let [agent (ssh-agent {})
+                  local-filename (concat "/tmp/ma_perf_urls_" (.toString key) ".log")]
               (let [session (session agent host {:strict-host-key-checking :no
                                                  :username user})]
                 (with-connection session
-                  ((ssh session {:in (str "cat " log-path)}) :out)))))]
-        (map f hosts)))
+                  (let [channel (ssh-sftp session)]
+                    (with-channel-connection channel
+                      (sftp channel {} :get log-path local-filename)
+                      (reader local-filename)))))))]
+        (map-indexed f hosts)))
 
 (defn str< [str1 str2]
   (= (compare str1 str2) -1))
