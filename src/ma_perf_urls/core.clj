@@ -6,8 +6,6 @@
 
 (def hosts (list "put hosts here"))
 
-(def pk "/home/robert/.ssh/id_rsa")
-
 (def user "jvmuser")
 
 (def date-matcher #"^(\d{4}\-\d{2}\-\d{2} \d{2}:\d{2}:\d{2}),\d+ (.*)")
@@ -23,7 +21,6 @@
 (defn log-filehandles [hosts]
   (let [f (fn [host]
             (let [agent (ssh-agent {})]
-              (add-identity agent {:private-key-path pk})
               (let [session (session agent host {:strict-host-key-checking :no
                                                  :username user})]
                 (with-connection session
@@ -41,11 +38,12 @@
       (nth match 1))))
 
 (defn requests-from-lines [lines]
-  (mapcat #(let [[time rest] %1
-                 request (request-from-line rest)]
+  (mapcat #(let [time (first %1)
+                 request (request-from-line (rest %1))]
              (if (nil? request)
                []
-               [[time request]]))))
+               [[time request]]))
+          lines))
 
 (defn entries-since [log-lines time]
   (let [time-string (unparse log-date-formatter time)]
@@ -63,7 +61,7 @@
     (requests-from-lines lines)))
 
 (defn string->timestamp [str]
-  (Integer. (concat re-seq #("\\d+"))))
+  (Integer. (concat (re-seq #("\\d+") str))))
 
 (defn flatten-requests [requests]
   (lazy-seq
