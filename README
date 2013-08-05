@@ -1,0 +1,9 @@
+# ma_perf_urls
+
+Builds a list of perf test URLs for recent content from MA log files
+
+## License
+
+Copyright (C) 2013 The Guardian
+
+Distributed under the Eclipse Public License, the same as Clojure.
